@@ -1,0 +1,153 @@
+<%- if node['varnish']['version'] == '4.0' %>
+vcl 4.0;
+<%- end %>
+
+backend usatoday {
+  .host = "<%= node['varnish']['backend']['usatoday'] %>";
+  .port = "80";
+}
+
+backend cincinnati {
+  .host = "<%= node['varnish']['backend']['cincinnati'] %>";
+  .port = "80";
+}
+
+backend azcentral {
+  .host = "<%= node['varnish']['backend']['azcentral'] %>";
+  .port = "80";
+}
+
+backend indystar {
+  .host = "<%= node['varnish']['backend']['indystar'] %>";
+  .port = "80";
+}
+
+backend courierjournal {
+  .host = "<%= node['varnish']['backend']['courierjournal'] %>";
+  .port = "80";
+}
+
+backend democratandchronicle {
+  .host = "<%= node['varnish']['backend']['democratandchronicle'] %>";
+  .port = "80";
+}
+
+backend tennessean {
+  .host = "<%= node['varnish']['backend']['tennessean'] %>";
+  .port = "80";
+}
+
+backend freep {
+  .host = "<%= node['varnish']['backend']['freep'] %>";
+  .port = "80";
+}
+
+backend detroitnews {
+  .host = "<%= node['varnish']['backend']['detroitnews'] %>";
+  .port = "80";
+}
+
+backend khou {
+  .host = "<%= node['varnish']['backend']['khou'] %>";
+  .port = "80";
+}
+
+backend catchall {
+  .host = "<%= node['varnish']['backend']['catchall'] %>";
+  .port = "80";
+}
+
+sub vcl_deliver {
+
+  if (obj.hits > 0) {
+    set resp.http.X-Cache = "HIT";
+    set resp.http.X-Cache-Hits = obj.hits;
+  } else {
+    set resp.http.X-Cache = "MISS";
+  }
+}
+
+sub vcl_recv {
+
+  // set appropriate backends per incoming host header
+
+  if (req.http.Host == "<%= node['varnish']['header']['usatoday'] %>") {
+    set req.backend_hint  = usatoday;
+
+  } else if (req.http.Host == "<%= node['varnish']['header']['cincinnati'] %>") {
+    set req.backend_hint = cincinnati;
+
+  } else if (req.http.Host == "<%= node['varnish']['header']['azcentral'] %>") {
+    set req.backend_hint = azcentral;
+
+  } else if (req.http.Host == "<%= node['varnish']['header']['indystar'] %>") {
+    set req.backend_hint = indystar;
+
+  } else if (req.http.Host == "<%= node['varnish']['header']['courierjournal'] %>") {
+    set req.backend_hint = courierjournal;
+
+  } else if (req.http.Host == "<%= node['varnish']['header']['democratandchronicle'] %>") {
+    set req.backend_hint = democratandchronicle;
+  
+  } else if (req.http.Host == "<%= node['varnish']['header']['tennessean'] %>") {
+    set req.backend_hint = tennessean;
+
+  } else if (req.http.Host == "<%= node['varnish']['header']['freep'] %>") {
+    set req.backend_hint = freep;
+
+  } else if (req.http.Host == "<%= node['varnish']['header']['detroitnews'] %>") {
+    set req.backend_hint = detroitnews;
+
+  } else if (req.http.Host == "<%= node['varnish']['header']['khou'] %>") {
+    set req.backend_hint = khou;
+
+  } else {
+    set req.backend_hint = catchall;
+  }
+
+  if (req.method != "GET" &&
+    req.method != "HEAD" &&
+    req.method != "PUT" &&
+    req.method != "POST" &&
+    req.method != "TRACE" &&
+    req.method != "OPTIONS" &&
+    req.method != "DELETE") {
+    /* Non-RFC2616 or CONNECT which is weird. */
+    return (pipe);
+  }
+  if (req.method != "GET" && req.method != "HEAD") {
+    /* We only deal with GET and HEAD by default */
+    return (pass);
+  }
+  return(hash);
+}
+
+sub vcl_hash {
+    hash_data(req.url);
+    return(lookup);
+}
+
+sub vcl_backend_response {
+
+  // header allowing any origin to access the resource
+  set beresp.http.Access-Control-Allow-Origin = "*";
+  // unset bluestripe cookies to avoid hit for pass
+  unset beresp.http.Set-Cookie;
+
+  // TTLs are set below here ==>
+
+  if (bereq.url ~ "^/$") {
+    set beresp.ttl = <%= node['varnish']['ttls']['lb_healthcheck'] %>;
+    return(deliver);
+  }
+  if (<%= node['varnish']['uri']['sports'] %>) {
+      set beresp.ttl = <%= node['varnish']['ttls']['sports'] %>;
+  }
+
+  if (<%= node['varnish']['uri']['uxservices'] %>) {
+      set beresp.ttl = <%= node['varnish']['ttls']['uxservices'] %>;
+  }
+  if (<%= node['varnish']['uri']['presentation'] %>) {
+      set beresp.ttl = <%= node['varnish']['ttls']['presentation'] %>;
+  }
+}
