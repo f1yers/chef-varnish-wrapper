@@ -21,7 +21,7 @@ default['varnish']['header']['freep'] = 'varnish1'
 default['varnish']['header']['detroitnews'] = 'varnish1'
 default['varnish']['header']['khou'] = 'varnish1'
 
-default['varnish']['uri']['sports'] = 'bereq.url ~ "(?i)\/SportsData\/Statistics\.svc\/.*"'
+default['varnish']['uri']['sports'] = 'bereq.url ~ "(?i)\/SportsData\/Statistics\.svc\/.*" "\n" test'
 default['varnish']['uri']['uxservices'] = 'bereq.url ~ "(?i)\/UxServices\/UxFronts\.svc\/blogs\/.*\/.*"'
 default['varnish']['uri']['presentation'] = 'bereq.url ~ "(?i)\/PresentationService\/v3\/sites\/.*\/fronts\/.*\/backfill"'
 
